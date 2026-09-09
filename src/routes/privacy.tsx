@@ -11,10 +11,7 @@ export const Route = createFileRoute("/privacy")({
           "How SnapCut AI handles uploaded images, account data and payments, including our 24-hour deletion policy.",
       },
       { property: "og:title", content: "Privacy Policy — SnapCut AI" },
-      {
-        property: "og:description",
-        content: "Image retention, account data and payment handling.",
-      },
+      { property: "og:description", content: "Image retention, account data and payment handling." },
     ],
   }),
   component: PrivacyPage,

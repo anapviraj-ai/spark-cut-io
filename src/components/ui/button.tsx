@@ -13,8 +13,7 @@ const buttonVariants = cva(
         hero: "bg-[image:var(--gradient-cta)] text-primary-foreground font-semibold shadow-[var(--glow-primary)] hover:brightness-110 hover:shadow-[var(--glow-accent)] transition-all",
         neon: "border border-primary/40 bg-primary/10 text-foreground hover:bg-primary/20 hover:border-primary hover:shadow-[var(--glow-primary)] transition-all",
         destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
-        outline:
-          "border border-border bg-card/60 shadow-sm hover:bg-secondary hover:text-foreground",
+        outline: "border border-border bg-card/60 shadow-sm hover:bg-secondary hover:text-foreground",
         secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         ghost: "hover:bg-secondary hover:text-foreground",
         link: "text-primary underline-offset-4 hover:underline",
@@ -25,6 +24,7 @@ const buttonVariants = cva(
         lg: "h-12 rounded-lg px-8 text-base",
         icon: "h-10 w-10",
       },
+
     },
     defaultVariants: {
       variant: "default",

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { features, faqs, plans } from "@/data/site";
 import heroImage from "@/assets/hero-cutout.jpg";
 import * as Icons from "lucide-react";
-import { HeroUploader } from "@/components/site/HeroUploader";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -67,7 +66,20 @@ function Index() {
             </ul>
           </div>
 
-          <HeroUploader />
+          <div className="glass-card glow-ring overflow-hidden p-3">
+            <img
+              src={heroImage}
+              alt="Product photo with its background removed by SnapCut AI"
+              className="w-full rounded-xl object-cover"
+              loading="eager"
+            />
+            <div className="flex items-center justify-between px-2 py-3 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-2">
+                <Upload className="h-3.5 w-3.5" /> shoe-front.jpg
+              </span>
+              <span className="text-success">Done in 2.8s</span>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -133,7 +145,11 @@ function Index() {
                   </li>
                 ))}
               </ul>
-              <Button className="mt-6 w-full" variant={p.highlighted ? "hero" : "outline"} asChild>
+              <Button
+                className="mt-6 w-full"
+                variant={p.highlighted ? "hero" : "outline"}
+                asChild
+              >
                 <Link to="/pricing">{p.cta}</Link>
               </Button>
             </article>

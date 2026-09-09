@@ -15,10 +15,7 @@ export const Route = createFileRoute("/contact")({
           "Questions about plans, the API or bulk pricing? Send the SnapCut AI team a message and get a reply within a day.",
       },
       { property: "og:title", content: "Contact — SnapCut AI" },
-      {
-        property: "og:description",
-        content: "Talk to the SnapCut AI team about plans or the API.",
-      },
+      { property: "og:description", content: "Talk to the SnapCut AI team about plans or the API." },
     ],
   }),
   component: ContactPage,
@@ -70,9 +67,7 @@ function ContactPage() {
             setTimeout(() => {
               setSending(false);
               (e.target as HTMLFormElement).reset();
-              toast.success("Message sent", {
-                description: "We'll reply within one business day.",
-              });
+              toast.success("Message sent", { description: "We'll reply within one business day." });
             }, 700);
           }}
         >
