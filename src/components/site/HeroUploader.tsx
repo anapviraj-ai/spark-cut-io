@@ -13,7 +13,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import heroImage from "@/assets/hero-cutout.jpg";
-import { removeBackground } from "@imgly/background-removal";
+import { removeBackground, preload } from "@imgly/background-removal";
 
 interface ProcessedResult {
   originalUrl: string;
@@ -21,6 +21,47 @@ interface ProcessedResult {
   fileName: string;
   fileSize: string;
   duration: string;
+}
+
+// Fast downscaling helper to optimize oversized photos for rapid neural inference
+async function prepareOptimizedImage(file: File, maxDimension = 1280): Promise<Blob | File> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const { naturalWidth: width, naturalHeight: height } = img;
+      if (width <= maxDimension && height <= maxDimension) {
+        resolve(file);
+        return;
+      }
+      const scale = maxDimension / Math.max(width, height);
+      const targetW = Math.round(width * scale);
+      const targetH = Math.round(height * scale);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext("2d", { willReadFrequently: false });
+      if (!ctx) {
+        resolve(file);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, targetW, targetH);
+      canvas.toBlob(
+        (blob) => {
+          resolve(blob || file);
+        },
+        file.type === "image/png" ? "image/png" : "image/jpeg",
+        0.92
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(file);
+    };
+    img.src = url;
+  });
 }
 
 export function HeroUploader() {
@@ -35,6 +76,22 @@ export function HeroUploader() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const sliderContainerRef = useRef<HTMLDivElement>(null);
+
+  // Warm up AI model in the background immediately when page loads
+  useEffect(() => {
+    const warmUp = async () => {
+      try {
+        await preload({ model: "isnet_quint8", device: "gpu" });
+      } catch {
+        try {
+          await preload({ model: "isnet_quint8", device: "cpu" });
+        } catch {
+          // Warmup fallback
+        }
+      }
+    };
+    warmUp();
+  }, []);
 
   // Format bytes helper
   const formatFileSize = (bytes: number): string => {
@@ -145,43 +202,68 @@ export function HeroUploader() {
     const fileSize = formatFileSize(file.size);
 
     setIsProcessing(true);
-    setProcessingProgress(10);
-    setProcessingStage("Initializing AI neural segmentation engine...");
+    setProcessingProgress(15);
+    setProcessingStage("Optimizing image for fast AI inference...");
     toast.success(`Processing ${fileName} (${sourceDesc})`);
 
     try {
       let cutoutUrl: string;
 
+      // Fast resolution optimization (avoids processing unnecessary 4K camera pixels)
+      const optimizedInput = await prepareOptimizedImage(file, 1200);
+
       try {
-        // Run client-side AI background removal model (ISNet / ONNX WebAssembly)
-        const blob = await removeBackground(file, {
-          model: "isnet_quint8",
-          progress: (key: string, current: number, total: number) => {
-            const ratio = total > 0 ? current / total : 0;
-            const pct = Math.min(100, Math.max(0, Math.round(ratio * 100)));
+        // Try GPU accelerated inference first for 3x-10x speed boost
+        let targetBlob: Blob;
+        try {
+          targetBlob = await removeBackground(optimizedInput, {
+            model: "isnet_quint8",
+            device: "gpu",
+            rescale: true,
+            progress: (key: string, current: number, total: number) => {
+              const ratio = total > 0 ? current / total : 0;
+              const pct = Math.min(100, Math.max(0, Math.round(ratio * 100)));
 
-            if (key.includes("fetch")) {
-              setProcessingStage(`Loading AI neural network model (${pct}%)...`);
-              setProcessingProgress(Math.min(45, Math.round(pct * 0.45)));
-            } else if (key.includes("compute")) {
-              setProcessingStage(`AI neural matting & subject cutout (${pct}%)...`);
-              setProcessingProgress(45 + Math.min(50, Math.round(pct * 0.5)));
-            } else {
-              setProcessingStage("Refining hairline & edge alpha mask...");
-              setProcessingProgress(pct);
-            }
-          },
-          output: {
-            format: "image/png",
-            quality: 0.95,
-          },
-        });
+              if (key.includes("fetch")) {
+                setProcessingStage(`Loading AI model (${pct}%)...`);
+                setProcessingProgress(Math.min(40, Math.round(pct * 0.4)));
+              } else if (key.includes("compute")) {
+                setProcessingStage(`GPU neural matting (${pct}%)...`);
+                setProcessingProgress(40 + Math.min(55, Math.round(pct * 0.55)));
+              } else {
+                setProcessingStage("Refining hairline & edge mask...");
+                setProcessingProgress(pct);
+              }
+            },
+            output: {
+              format: "image/png",
+              quality: 0.95,
+            },
+          });
+        } catch {
+          // Fallback to CPU if GPU device is unavailable in user's browser
+          setProcessingStage("Running fast CPU inference...");
+          targetBlob = await removeBackground(optimizedInput, {
+            model: "isnet_quint8",
+            device: "cpu",
+            rescale: true,
+            progress: (key: string, current: number, total: number) => {
+              const ratio = total > 0 ? current / total : 0;
+              const pct = Math.min(100, Math.max(0, Math.round(ratio * 100)));
+              setProcessingProgress(20 + Math.min(75, Math.round(pct * 0.75)));
+            },
+            output: {
+              format: "image/png",
+              quality: 0.95,
+            },
+          });
+        }
 
-        cutoutUrl = URL.createObjectURL(blob);
+        cutoutUrl = URL.createObjectURL(targetBlob);
       } catch (aiErr) {
         console.warn("AI neural removal fallback triggered:", aiErr);
-        setProcessingStage("Using edge-preserving matting fallback...");
-        setProcessingProgress(85);
+        setProcessingStage("Applying edge-preserving matting fallback...");
+        setProcessingProgress(90);
         cutoutUrl = await generateFallbackCutout(objectUrl);
       }
 
@@ -197,7 +279,7 @@ export function HeroUploader() {
         duration: elapsed,
       });
       setIsProcessing(false);
-      toast.success("Background removed with AI precision!");
+      toast.success(`Background removed in ${elapsed}!`);
     } catch (err) {
       console.error("Processing failed:", err);
       setIsProcessing(false);
