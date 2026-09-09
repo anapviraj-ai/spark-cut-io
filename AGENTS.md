@@ -1,10 +1,13 @@
-<!-- LOVABLE:BEGIN -->
-> [!IMPORTANT]
-> This project is connected to [Lovable](https://lovable.dev). Avoid rewriting
-> published git history — force pushing, or rebasing/amending/squashing commits
-> that are already pushed — as it rewrites history on Lovable's side and the
-> user will likely lose their project history.
->
-> Commits you push to the connected branch sync back to Lovable and show up in
-> the editor, so keep the branch in a working state.
-<!-- LOVABLE:END -->
+# SnapCut AI — Developer & Agent Guidelines
+
+SnapCut AI is a high-performance web application designed to remove image backgrounds with neural network precision.
+
+## Tech Stack
+- **Framework**: TanStack Start / React 19 / Vite
+- **Styling**: Tailwind CSS / Vanilla CSS Design Tokens
+- **Cutout Engine**: Client-side AI Neural Matting with fallback algorithms
+
+## Key Commands
+- `npm run dev`: Starts the local development server.
+- `npm run build`: Builds the production bundle.
+- `npm run lint`: Runs ESLint checks.
